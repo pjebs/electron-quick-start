@@ -1,41 +1,57 @@
 // Modules to control application life and create native browser window
-const {app, BrowserWindow} = require('electron')
-const path = require('path')
+const { app, BrowserWindow } = require("electron");
+const path = require("path");
+const https = require("https");
 
-function createWindow () {
+function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    }
-  })
+    height: 600
+  });
 
   // and load the index.html of the app.
-  mainWindow.loadFile('index.html')
-
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  mainWindow.loadFile("index.html");
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', createWindow)
 
-// Quit when all windows are closed.
-app.on('window-all-closed', function () {
-  // On macOS it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') app.quit()
-})
+/*
+1) Run self-signed https server: go run server.go
+2) Run electron app
 
-app.on('activate', function () {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) createWindow()
-})
+You will see that "certificate-error" listener is not called.
+I am using electron 8.0.1 because I could see that some changes were made recently.
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+*/
+
+
+app.on("ready", () => {
+  createWindow();
+
+  app.on(
+    "certificate-error",
+    (event, webContents, url, error, certificate, callback) => {
+      console.log("certificate-error");
+      event.preventDefault();
+      callback(true);
+    }
+  );
+
+  https
+    .get("https:localhost:8080", resp => {
+      let data = "";
+
+      // A chunk of data has been recieved.
+      resp.on("data", chunk => {
+        data += chunk;
+      });
+
+      // The whole response has been received. Print out the result.
+      resp.on("end", () => {
+        console.log(JSON.parse(data).explanation);
+      });
+    })
+    .on("error", err => {
+      console.log("Error: " + err.message);
+    });
+});
