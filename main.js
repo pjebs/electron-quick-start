@@ -16,8 +16,9 @@ function createWindow() {
 
 
 /*
-1) Run self-signed https server: go run server.go
-2) Run electron app
+1) Run go get github.com/rocketlaunchr/https-go
+2) Run self-signed https server: go run server.go
+3) Run electron app
 
 You will see that "certificate-error" listener is not called.
 I am using electron 8.0.1 because I could see that some changes were made recently.
